@@ -38,6 +38,9 @@ chmod +x "$PLUGIN_DIR"/*
 
 echo "🧹 Удаление лишних файлов..."
 for f in "$PLUGIN_DIR"/*; do
+    # пропускаем директории
+    [ -d "$f" ] && continue
+
     fname=$(basename "$f")
     keep_flag=0
     for k in $KEEP; do
@@ -46,6 +49,7 @@ for f in "$PLUGIN_DIR"/*; do
             break
         fi
     done
+
     if [ $keep_flag -eq 0 ]; then
         rm -f "$f"
         echo "   ❌ Удалён: $fname"
@@ -53,6 +57,7 @@ for f in "$PLUGIN_DIR"/*; do
         echo "   ✅ Оставлен: $fname"
     fi
 done
+
 
 echo "🗑 Очистка временных файлов..."
 rm -f /root/repo.zip
