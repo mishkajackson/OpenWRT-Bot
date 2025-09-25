@@ -3,3 +3,6 @@
 ```bash
 curl -sL https://raw.githubusercontent.com/mishkajackson/OpenWRT-Bot/master/update_plugins.sh | sh
 ```
+```bash
+nano /usr/lib/telegramopenwrt/plugins/update_config
+```
