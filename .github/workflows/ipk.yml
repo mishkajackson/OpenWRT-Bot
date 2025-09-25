@@ -1,41 +1,27 @@
-name: Build OpenWrt IPK
+name: Build IPK (SDK)
 
 on:
   push:
     branches: [ master, minimal ]
-    tags: [ 'v*' ]
-  pull_request:
+  workflow_dispatch:
 
 jobs:
   build:
-    name: ${{ matrix.arch }} IPK
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: false
       matrix:
-        arch:
-          # добавь/удали цели по своим устройствам
-          - x86_64
-          - mips_24kc          # ar71xx/ath79 (Atheros)
-          - mipsel_24kc        # ramips mt7620/mt76x8
-          - aarch64_cortex-a53 # ARMv8
-
+        arch: [ x86_64, mips_24kc, mipsel_24kc, aarch64_cortex-a53 ]
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+      - uses: actions/checkout@v4
 
-      # Собираем ТОЛЬКО наш пакет из каталога package/telegramopenwrt-bot
       - name: Build with OpenWrt SDK
         uses: openwrt/gh-action-sdk@main
         env:
           ARCH: ${{ matrix.arch }}
-          FEED_DIR: ${{ github.workspace }}       # текущий репозиторий как feed
+          FEED_DIR: ${{ github.workspace }}        # твой репозиторий как feed
           FEEDNAME: custom
-          PACKAGES: "telegramopenwrt-bot"         # имя пакета из package/<name>
-          INDEX: 1                                 # сгенерировать Packages/Packages.gz
-          V: s                                     # шумность лога поменьше
+          PACKAGES: "telegramopenwrt-bot"          # ИМЯ пакета из package/<name>
+          INDEX: 1
 
       - name: Upload IPKs
         uses: actions/upload-artifact@v4
@@ -45,21 +31,3 @@ jobs:
             bin/packages/${{ matrix.arch }}/custom/*.ipk
             bin/packages/${{ matrix.arch }}/custom/Packages*
           if-no-files-found: error
-
-  release:
-    if: startsWith(github.ref, 'refs/tags/v')
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          path: ./artifacts
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            artifacts/**/**/*.ipk
-            artifacts/**/**/Packages*
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          
