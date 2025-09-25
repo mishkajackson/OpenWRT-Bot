@@ -19,9 +19,7 @@ start
 update_rules
 "
 
-echo "🔄 Обновление пакетов и установка unzip..."
-opkg update
-opkg install unzip
+
 
 echo "⬇️ Скачивание архива репозитория..."
 curl -L -o /root/repo.zip https://github.com/mishkajackson/OpenWRT-Bot/archive/refs/heads/master.zip
