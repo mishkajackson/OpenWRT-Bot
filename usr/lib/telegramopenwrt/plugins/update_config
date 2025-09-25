@@ -1,0 +1,64 @@
+#!/bin/sh
+set -eu
+
+# === Настройки ===
+URL="https://domain.com/sub"
+WORKDIR="/opt/clash"
+DEST="$WORKDIR/config.yaml"
+CLASH_BIN="$WORKDIR/bin/clash"
+UA="Clash"
+
+TMP="$(mktemp /tmp/config.yaml.XXXXXX)"
+LOG="/tmp/clash_config_test.log"
+
+cleanup() { [ -f "$TMP" ] && rm -f "$TMP" || true; }
+trap cleanup EXIT
+
+# --- Проверим, что бинарь существует и исполняемый ---
+if [ ! -x "$CLASH_BIN" ]; then
+  echo "[!] Не найден исполняемый бинарь: $CLASH_BIN"
+  echo "    Проверьте путь (ls -l $WORKDIR/bin/) или выполните: chmod +x $CLASH_BIN"
+  exit 1
+fi
+
+# --- Скачивание ---
+echo "[*] Скачиваю конфиг…"
+if ! curl -fsSL --retry 3 -A "$UA" -o "$TMP" "$URL"; then
+  echo "[!] Ошибка скачивания: $URL"
+  exit 1
+fi
+[ -s "$TMP" ] || { echo "[!] Получен пустой файл"; exit 1; }
+
+# --- Проверка валидности через clash -t ---
+echo "[*] Проверяю конфиг: $CLASH_BIN -t -d $WORKDIR -f $TMP"
+if ! "$CLASH_BIN" -t -d "$WORKDIR" -f "$TMP" >"$LOG" 2>&1; then
+  echo "[!] Конфиг НЕ прошёл проверку. Последние строки лога:"
+  tail -n 50 "$LOG" || true
+  exit 1
+fi
+
+echo "[+] Конфиг валиден. Делаю резервную копию и обновляю…"
+if [ -f "$DEST" ]; then
+  cp -f "$DEST" "$DEST.bak-$(date +%Y%m%d-%H%M%S)" || true
+fi
+
+# === Атомарная замена без 'install' ===
+TMP_DST="$WORKDIR/.config.yaml.tmp.$$"
+cp -f "$TMP" "$TMP_DST"
+chmod 0644 "$TMP_DST"
+mv -f "$TMP_DST" "$DEST"
+sync
+
+# --- Перезапуск Clash ---
+echo "[*] Перезапуск Clash…"
+if [ -x /etc/init.d/clash ]; then
+  /etc/init.d/clash restart || { echo "[!] Не удалось рестартануть /etc/init.d/clash"; exit 1; }
+else
+  pkill -f "$CLASH_BIN" 2>/dev/null || true
+  sleep 1
+  nohup "$CLASH_BIN" -d "$WORKDIR" >/tmp/clash.out 2>&1 &
+  echo "[i] Clash запущен вручную через nohup (лог: /tmp/clash.out)"
+fi
+
+echo "[✓] Готово."
+

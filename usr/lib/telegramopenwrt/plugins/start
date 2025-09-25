@@ -1,6 +1,6 @@
 #!/bin/sh
 
-echo -en "Добро пожаловать!\n\n"
+echo -en "Выберите команду: \n\n"
 ALLPLUGINS=$(ls -1 -p | grep -v "/")
 for plug in $ALLPLUGINS
 do
