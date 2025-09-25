@@ -1,0 +1,1 @@
+curl -A "Clash" -o /opt/clash/config.yaml "https://domai.com" && service clash restart

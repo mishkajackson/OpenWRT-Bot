@@ -1,6 +1,0 @@
-#!/bin/sh
-
-OUTPUT=$(/bin/opkg update)
-
-echo $OUTPUT
-echo "Update packages done!"
