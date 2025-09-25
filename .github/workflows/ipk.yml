@@ -1,27 +1,32 @@
-name: Build IPK (SDK)
+name: Build OpenWrt IPK
 
 on:
   push:
     branches: [ master, minimal ]
-  workflow_dispatch:
+  workflow_dispatch: {}
 
 jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         arch: [ x86_64, mips_24kc, mipsel_24kc, aarch64_cortex-a53 ]
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Build with OpenWrt SDK
         uses: openwrt/gh-action-sdk@main
         env:
           ARCH: ${{ matrix.arch }}
-          FEED_DIR: ${{ github.workspace }}        # твой репозиторий как feed
+          FEED_DIR: ${{ github.workspace }}      # текущий репозиторий как feed
           FEEDNAME: custom
-          PACKAGES: "telegramopenwrt-bot"          # ИМЯ пакета из package/<name>
+          PACKAGES: "telegramopenwrt-bot"        # ИМЯ пакета (см. ниже)
           INDEX: 1
+          V: s
 
       - name: Upload IPKs
         uses: actions/upload-artifact@v4
